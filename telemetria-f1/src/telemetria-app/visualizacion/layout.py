@@ -1,34 +1,28 @@
-from dash import html
-import livef1
+from dash import html, dcc, dash_table
 
-# Intentamos cargar los datos de una sesión
-try:
-    session = livef1.get_session(
-        season=2024,
-        meeting_identifier="Spa",
-        session_identifier="Race"
+def crear_layout(nombre_evento: str, circuito: str):
+    return html.Div(
+        style={"margin": "40px"},
+        children=[
+            html.H1("🏎️ Telemetría F1 (Mock Real-Time)", style={"textAlign": "center"}),
+            html.H4(f"{nombre_evento} — {circuito}", style={"textAlign": "center"}),
+
+            dcc.Interval(id="update-interval", interval=2000, n_intervals=0),
+
+            dash_table.DataTable(
+                id="telemetry-table",
+                columns=[
+                    {"name": "Pos", "id": "Position"},
+                    {"name": "Auto", "id": "Driver"},
+                    {"name": "Gap Líder", "id": "GapToLeader"},
+                    {"name": "Últ. Vuelta", "id": "LastLapTime"},
+                    {"name": "Mejor Vuelta", "id": "BestLapTime"},
+                ],
+                style_table={"width": "80%", "margin": "auto"},
+                style_cell={"textAlign": "center"},
+                style_header={"backgroundColor": "#111", "color": "white"},
+                style_data={"backgroundColor": "#222", "color": "white"},
+                page_size=20,
+            )
+        ]
     )
-    data = session.get_data("Car_Data")
-
-    # Convertimos los datos a texto legible
-    data_text = str(data)[:1500]  # solo mostramos los primeros caracteres
-except Exception as e:
-    data_text = f"⚠️ Error al cargar datos: {e}"
-
-# Layout del dashboard
-layout = html.Div(
-    style={"textAlign": "center", "marginTop": "50px", "fontFamily": "monospace"},
-    children=[
-        html.H1("🏎️ Telemetría F1 Dashboard", style={"color": "#d32f2f"}),
-        html.P("Datos obtenidos de la API de LiveF1:"),
-        html.Pre(data_text, style={
-            "backgroundColor": "#f4f4f4",
-            "padding": "10px",
-            "textAlign": "left",
-            "maxWidth": "80%",
-            "margin": "auto",
-            "borderRadius": "8px",
-            "whiteSpace": "pre-wrap"
-        }),
-    ]
-)
