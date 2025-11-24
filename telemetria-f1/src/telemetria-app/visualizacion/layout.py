@@ -51,7 +51,7 @@ def crear_layout():
                 }
             ),
 
-            # Intervalo de actualización
+            # Este contador fuerza que se actualice la pagina
             dcc.Interval(
                 id="update-interval",
                 interval=2000,

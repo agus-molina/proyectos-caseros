@@ -1,3 +1,17 @@
+"""
+MODULO DE FUNCIONES AUXILIARES NECESARIAS PARA LOS CALLBACKS:
+
+ordPosiciones() toma la ultima info de los conductores y los ordena por posicion.
+Como el formato de los datos de la API puede no ser constante evalua segun campo 'Position',
+sino 'Line' y si esa info no está todavia se da un nº arbitrariamente grande.
+
+infoFila() usa el par devuelto por ordPosiciones de formato {'driver_id' : {timing de conductor}},
+junto al diccionario mapeado de conductores de mismo formato pero con sus datos estaticos,
+y los usa para armar el diccionario de la info a mostrar en pantalla
+
+crearFila() toma esa info final y arma la estetica de la fila de la tabla
+"""
+
 from dash import html
 
 def ordPosiciones(eventoTiming):

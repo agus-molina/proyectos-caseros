@@ -32,10 +32,7 @@ def registrar_callbacks(app, telemetria):
             elem["RacingNumber"]: elem for elem in lista_conductores
         }
 
-        # se genera datos de cada fila
         filas = []
         for driver_id, timing in ordPosiciones(ultimoTiming):
             filas.append(crearFila(infoFila(driver_id, timing, conductores)))
         return filas
-    
-#drs ver speed trap y gap?

@@ -1,7 +1,7 @@
 from livef1.adapters.realtime_client import RealF1Client
 from data.data_collections import telemetria
 
-# Initialize client
+# Inicializa el cliente con los topics que nos importan
 client = RealF1Client(
     topics=["Heartbeat",
             "SessionInfo",
@@ -12,21 +12,22 @@ client = RealF1Client(
     log_file_name="./output.json"
 )
 
-def normalizar_datos(data):
-    #Devuelve siempre una lista de diccionarios válida.
+def normalizar_datos(data: any) -> list:
     if data is None:
         return []
-    if isinstance(data, dict):
+    elif isinstance(data, dict):
         return [data]
-    if isinstance(data, list):
+    elif isinstance(data, list):
         # filtrar basura
         return [elem for elem in data if isinstance(elem, dict)]
-    return []
+    else:
+        return []
 
-# Define multiple handlers
+# === HANDLERS DE TOPICS ===
+
 @client.callback("Heartbeat")
 async def handle_conn_health(records):
-    # Estabilidad de la conexion
+    # Señal de conexion
     conn_health = normalizar_datos(records.get("Heartbeat"))
     for record in conn_health:
         telemetria["Heartbeat"].append(record)
@@ -51,7 +52,7 @@ async def handle_session_status(records):
 
 @client.callback("TimingDataF1")
 async def handle_live_timing(records):
-    # Datos analiticos de carrera en curso
+    # Datos analiticos de carrera en curso, pueden venir en pedacitos
     updates = normalizar_datos(records.get("TimingDataF1"))
 
     for record in updates:
