@@ -1,14 +1,22 @@
-from collections import deque
-from mock_data import mock_update
-import time
+from dash import Dash
+import threading, time
+from visualizacion.layout import crear_layout
+from visualizacion.callbacks import registrar_callbacks
+from mock.mock_data import mock_update
+from data.data_collections import nombreEvento, circuito, telemetria
 
-telemetria = deque(maxlen=10)
+app = Dash(__name__)
+app.layout = crear_layout(nombreEvento, circuito)
+registrar_callbacks(app, telemetria)
 
-for _ in range(5):
-    snapshot = mock_update(telemetria)
-    print("Top 3 posiciones:")
-    lines = snapshot["timingdata"]["Lines"]
-    top = sorted(lines.values(), key=lambda x: int(x["Position"]))[:3]
-    for d in top:
-        print(f"{d['Position']} - {d['RacingNumber']} - {d['LastLapTime']['Value']}")
-    time.sleep(2)
+# 🔹 Hilo que simula datos en tiempo real
+def simular_datos():
+    while True:
+        mock_update(telemetria)
+        time.sleep(3)  # cada 3 segundos una nueva actualización
+
+# 🔹 Lanzar el hilo simulador al iniciar la app
+threading.Thread(target=simular_datos, daemon=True).start()
+
+if __name__ == "__main__":
+    app.run(debug=True)

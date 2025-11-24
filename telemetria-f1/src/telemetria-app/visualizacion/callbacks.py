@@ -1,28 +1,41 @@
 from dash import Input, Output
+from visualizacion.procesamiento import ordPosiciones, infoFila, crearFila
 
 def registrar_callbacks(app, telemetria):
 
     @app.callback(
-        Output("telemetry-table", "data"),
+        Output("nombre-evento", "children"),
+        Output("nombre-circuito", "children"),
+        Input("update-interval", "n_intervals")
+    )
+    def actualizar_titulos(_):
+        return telemetria["nombreEvento"], telemetria["circuito"]
+
+    @app.callback(
+        Output("tabla-body", "children"),
         Input("update-interval", "n_intervals")
     )
     def actualizar_tabla(_):
 
-        if not telemetria:
+        ultimoTiming = telemetria["estadoConductores"]
+        if not ultimoTiming:
             return []
 
-        # ✅ Último snapshot
-        snapshot = telemetria[-1]
-        timing = snapshot["timingdata"]["Lines"]
+        if not telemetria["DriverList"]:
+            return []
 
+        lista_conductores = [
+            elem for elem in telemetria["DriverList"] if isinstance(elem, dict)
+        ]
+
+        conductores = {
+            elem["RacingNumber"]: elem for elem in lista_conductores
+        }
+
+        # se genera datos de cada fila
         filas = []
-        for driver_id, info in sorted(timing.items(), key=lambda x: int(x[1]["Position"])):
-            filas.append({
-                "Position": info.get("Position", "-"),
-                "Driver": info.get("RacingNumber", "-"),
-                "GapToLeader": info.get("GapToLeader", "-") or "-",
-                "LastLapTime": info.get("LastLapTime", {}).get("Value", "-"),
-                "BestLapTime": info.get("BestLapTime", {}).get("Value") or "-",
-            })
-
+        for driver_id, timing in ordPosiciones(ultimoTiming):
+            filas.append(crearFila(infoFila(driver_id, timing, conductores)))
         return filas
+    
+#drs ver speed trap y gap?

@@ -1,23 +1,22 @@
-from dash import Dash, Output, Input
-from collections import deque
-import threading, time
+from dash import Dash
+import threading
 from visualizacion.layout import crear_layout
 from visualizacion.callbacks import registrar_callbacks
-from mock.mock_data import mock_update
-from data.data_collections import nombreEvento, circuito, telemetria
+from data.data_collections import telemetria
+from api.api_client import client
 
 app = Dash(__name__)
-app.layout = crear_layout(nombreEvento, circuito)
+app.layout = crear_layout()
 registrar_callbacks(app, telemetria)
 
-# 🔹 Hilo que simula datos en tiempo real
-def simular_datos():
-    while True:
-        mock_update(telemetria)
-        time.sleep(3)  # cada 3 segundos una nueva actualización
+# --- INICIAR CLIENTE EN THREAD ---
+def iniciar_cliente():
+    try:
+        client.run()
+    except Exception as e:
+        print(f"Error loading data: {e}")
 
-# 🔹 Lanzar el hilo simulador al iniciar la app
-threading.Thread(target=simular_datos, daemon=True).start()
+threading.Thread(target=iniciar_cliente, daemon=True).start()
 
 if __name__ == "__main__":
     app.run(debug=True)

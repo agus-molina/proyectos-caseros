@@ -1,76 +1,80 @@
 from livef1.adapters.realtime_client import RealF1Client
-from data.data_collections import nombreEvento, circuito, telemetria
-import datetime
+from data.data_collections import telemetria
 
-"""
-try:
-    session = livef1.get_session(
-        season=2024,
-        meeting_identifier="Spa",
-        session_identifier="Race"
-    )
-    data = session.get_data("Car_Data")
-except Exception as e:
-    print(f"Error loading data: {e}")
-"""
 # Initialize client
 client = RealF1Client(
-    topics=["Heartbeat", "SessionInfo", "SessionData", "TimingData", "DriverList", "TyreStintSeries"],
+    topics=["Heartbeat",
+            "SessionInfo",
+            "SessionData",
+            "TimingDataF1",
+            "DriverList",
+            "TyreStintSeries"],
+    log_file_name="./output.json"
 )
 
+def normalizar_datos(data):
+    #Devuelve siempre una lista de diccionarios válida.
+    if data is None:
+        return []
+    if isinstance(data, dict):
+        return [data]
+    if isinstance(data, list):
+        # filtrar basura
+        return [elem for elem in data if isinstance(elem, dict)]
+    return []
+
 # Define multiple handlers
-@client.callback("salud_conexion")
+@client.callback("Heartbeat")
 async def handle_conn_health(records):
     # Estabilidad de la conexion
-    conn_health = records.get("Heartbeat")
+    conn_health = normalizar_datos(records.get("Heartbeat"))
+    for record in conn_health:
+        telemetria["Heartbeat"].append(record)
     if conn_health:
-        for record in conn_health:
-            telemetria["heartbeat"].append(record)
+        print("HEARTBEAT OK:", telemetria["Heartbeat"])
 
-@client.callback("info_sesion")
+@client.callback("SessionInfo")
 async def handle_info_sesion(records):
     # Datos estaticos de la sesion
-    nombreEvento = records.get("SessionInfo", {}).get("Name", "")
-    locacion = records.get("SessionInfo", {}).get("Circuit", {}).get("ShortName", "")     
+    info = normalizar_datos(records.get("SessionInfo"))
+    for record in info:
+        telemetria["nombreEvento"] = record.get("Meeting_Name", "")
+        telemetria["circuito"] = record.get("Meeting_Circuit_ShortName", "")
+        telemetria["SessionInfo"].append(record)
 
-@client.callback("sesion_status")
-async def handle_track_status(records):
+@client.callback("SessionData")
+async def handle_session_status(records):
     # Monitorea estado de sesion
-    session_status = records.get("SessionData")
-    if session_status:
-        for record in session_status:
-            telemetria["sesion_data"].append(record)
+    session_status = normalizar_datos(records.get("SessionData"))
+    for record in session_status:
+        telemetria["SessionData"].append(record)
 
-@client.callback("timing_data")
-async def handle_track_status(records):
+@client.callback("TimingDataF1")
+async def handle_live_timing(records):
     # Datos analiticos de carrera en curso
-    timing_data = records.get("TimingData")
-    if timing_data:
-        for record in timing_data:
-            telemetria["live_timing"].append(record)
+    updates = normalizar_datos(records.get("TimingDataF1"))
 
-@client.callback("driver_list")
-async def handle_track_status(records):
+    for record in updates:
+        driver = record.get("DriverNo")
+        if not driver:
+            continue
+
+        # merge incremental
+        telemetria["estadoConductores"][driver] = {
+            **telemetria["estadoConductores"].get(driver, {}),
+            **record
+        }
+
+@client.callback("DriverList")
+async def handle_drivers_list(records):
     # Lista estatica de corredores
-    drivers = records.get("DriverList")
-    if drivers:
-        for record in drivers:
-            telemetria["drivers_list"].append(record)
+    conductores = normalizar_datos(records.get("DriverList"))
+    for record in conductores:
+        telemetria["DriverList"].append(record)
 
-@client.callback("series_ruedas")
-async def handle_track_status(records):
+@client.callback("TyreStintSeries")
+async def handle_tyre_stints(records):
     # Historial de cambio de ruedas
-    tyre_stints = records.get("TyreStintSeries")
-    if tyre_stints:
-        for record in tyre_stints:
-            telemetria["tyre_series"].append(record)
-
-@client.callback("log_handler")
-async def log_with_timestamp(records):
-    with open("data_with_timestamp.log", "a") as f:
-        for record in records:
-            timestamp = datetime.datetime.now().isoformat()
-            f.write(f"{timestamp} - {record}\n")
-
-# Start the client
-client.run()
+    tyre_stints = normalizar_datos(records.get("TyreStintSeries"))
+    for record in tyre_stints:
+        telemetria["TyreStintSeries"].append(record)
