@@ -32,34 +32,56 @@ def infoFila(driver_id, eventoTiming, conductores):
         "paradasPits": eventoTiming.get("NumberOfPitStops", 0),
 
         "IntervalToPositionAhead": eventoTiming.get("IntervalToPositionAhead_Value", "--:---"),
+        "Catching": eventoTiming.get("IntervalToPositionAhead_Catching", False),
         "GapToLeader": eventoTiming.get("GapToLeader", "--:---"),
 
-        "LastLapTime": eventoTiming.get("LastLapTime", {}).get("Value", "--:---"),
-        "BestLapTime": eventoTiming.get("BestLapTime", {}).get("Value", "--:---"),
+        "LastLapTime": eventoTiming.get("LastLapTime_Value", "--:---"),
+        "BestLapTime": eventoTiming.get("BestLapTime_Value", "--:---"),
+        "PersonalFastest": eventoTiming.get("LastLapTime_PersonalFastest", False),
+        "OverallFastest": eventoTiming.get("LastLapTime_OverallFastest", False),
+
+        "S1_Value": eventoTiming.get("Sectors_1_Value", "--:---"),
+        "S1_PersonalFastest": eventoTiming.get("Sectors_1_PersonalFastest", False),
+        "S1_OverallFastest": eventoTiming.get("Sectors_1_OverallFastest", False),
+        "S1_PreviousValue": eventoTiming.get("Sectors_1_PreviousValue", "--:---"),
+        "S2_Value": eventoTiming.get("Sectors_2_Value", "--:---"),
+        "S2_PersonalFastest": eventoTiming.get("Sectors_2_PersonalFastest", False),
+        "S2_OverallFastest": eventoTiming.get("Sectors_2_OverallFastest", False),
+        "S2_PreviousValue": eventoTiming.get("Sectors_2_PreviousValue", "--:---"),
+        "S3_Value": eventoTiming.get("Sectors_3_Value", "--:---"),
+        "S3_PersonalFastest": eventoTiming.get("Sectors_3_PersonalFastest", False),
+        "S3_OverallFastest": eventoTiming.get("Sectors_3_OverallFastest", False),
+        "S3_PreviousValue": eventoTiming.get("Sectors_3_PreviousValue", "--:---")
     }
-    """return {
-        "posicion": eventoTiming.get("Position", "--"),
-        "corredor": datos_conductor.get("Tla", "---"),
-        "color": datos_conductor.get("TeamColour", "FFFFFF"),
-        "retirado": eventoTiming.get("Retired", False),
-        "enPits": eventoTiming.get("InPit", False),
-        "paradasPits": eventoTiming.get("NumberOfPitStops", 0),
-        "IntervalToPositionAhead": eventoTiming.get("IntervalToPositionAhead", {}).get("Value", "-- ---"),
-        "Catching": eventoTiming.get("IntervalToPositionAhead", {}).get("Catching", False),
-        "GapToLeader": eventoTiming.get("GapToLeader", "-- ---"),
-        "LastLapTime": eventoTiming.get("LastLapTime", {}).get("Value", "-- ---"),
-        "BestLapTime": eventoTiming.get("BestLapTime", {}).get("Value", "-- ---"),
-        "PersonalFastest": eventoTiming.get("LastLapTime", {}).get("PersonalFastest", False),
-        "OverallFastest": eventoTiming.get("LastLapTime", {}).get("OverallFastest", False)
-    }
-"""
+
 def crearFila(info):
+
     # Fila grisada si el auto está retirado
     estilo_fila = {
         "opacity": 0.5 if info["retirado"] else 1,
-        "height": "38px",
+        "height": "44px",
         "borderBottom": "1px solid #222",
     }
+
+    estilo_estandar = {
+        "padding": "6px",
+    }
+
+    estilo_mejora = {
+        "color": "#12c43f",
+    }
+
+    estilo_superior = {
+        "color": "#c412c4",
+    }
+
+    def formatoEstilo(es_mejor, es_superior):
+        if es_superior:
+            return estilo_superior
+        elif es_mejor:
+            return estilo_mejora
+        else:
+            return {}
 
     return html.Tr([
         # BANDA DE COLOR DEL EQUIPO (8px)
@@ -69,12 +91,34 @@ def crearFila(info):
             "padding": "0",
         }),
 
-        html.Td(info["posicion"], style={"padding": "6px"}),
-        html.Td(info["corredor"], style={"padding": "6px"}),
-        html.Td(info["IntervalToPositionAhead"], style={"padding": "6px"}),
-        html.Td(info["GapToLeader"], style={"padding": "6px"}),
-        html.Td("PIT" if info["enPits"] else "OUT", style={"padding": "6px"}),
-        html.Td(info["paradasPits"], style={"padding": "6px"}),
-        html.Td(info["LastLapTime"], style={"padding": "6px"}),
-        html.Td(info["BestLapTime"], style={"padding": "6px"}),
+        html.Td(info["posicion"], style=estilo_estandar),
+        html.Td(info["corredor"], style=estilo_estandar),
+        html.Td([
+            html.Div(info["IntervalToPositionAhead"],
+                     style={"fontSize": "15px",
+                            "fontWeight": "700",
+                            "marginBottom": "2px",
+                            **formatoEstilo(info["Catching"],{})
+                    }),
+            html.Div(info["GapToLeader"],
+                     style={"fontSize": "11px",
+                            "opacity": 0.75
+                    }),
+        ], style=estilo_estandar),
+        html.Td("PIT" if info["enPits"] else "OUT", style=estilo_estandar),
+        html.Td(info["paradasPits"], style=estilo_estandar),
+        html.Td([
+            html.Div(info["LastLapTime"],
+                     style={"fontSize": "15px",
+                            "fontWeight": "700",
+                            **formatoEstilo(info["PersonalFastest"], info["OverallFastest"])
+                    }),
+            html.Div(info["BestLapTime"],
+                     style={"fontSize": "11px",
+                            **formatoEstilo({}, info["OverallFastest"])
+                    }),
+        ], style=estilo_estandar),
+        html.Td(info["S1_Value"]), #Despues quiero valor reciente a la izquiera mas grande y antiguo a la derecha mas chiquito y gris
+        html.Td(info["S2_Value"]),
+        html.Td(info["S3_Value"])
     ], style=estilo_fila)
